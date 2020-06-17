@@ -1,0 +1,4 @@
+#Wed Jun 17 10:41:05 KST 2020
+base.0=D\:\\Android_App\\BluetoothFinder-master\\BluetoothFinder-master\\Application\\build\\intermediates\\dex\\debug\\mergeDexDebug\\out
+path.0=classes.dex
+renamed.0=classes.dex

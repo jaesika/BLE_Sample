@@ -52,8 +52,7 @@ public class DeviceScanActivity extends ListActivity {
     private Handler mHandler;
 
     private static final int REQUEST_ENABLE_BT = 1;
-    // Stops scanning after 10 seconds.
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 10000; // 10초 동안 스캔
     //c.s.h. 2nd
     private static int PERMISSION_REQUEST_CODE = 1;
     private final static String TAG = DeviceScanActivity.class.getSimpleName();
@@ -74,8 +73,8 @@ public class DeviceScanActivity extends ListActivity {
             }
         }
     }
-	
-    @Override																									 
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         //c.s.h. 2nd
         Log.d(TAG, "Request Location Permissions:");
@@ -172,6 +171,7 @@ public class DeviceScanActivity extends ListActivity {
         mLeDeviceListAdapter.clear();
     }
 
+    // 아이템 클릭했을때 intent에 name, adress 전달 그리고 DeviceControlActivity 여기서 기기 정보 수집가능
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
         final BluetoothDevice device = mLeDeviceListAdapter.getDevice(position);

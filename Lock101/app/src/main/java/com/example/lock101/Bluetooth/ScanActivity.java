@@ -2,12 +2,18 @@ package com.example.lock101.Bluetooth;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,7 +32,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.example.lock101.R;
 
@@ -35,15 +43,17 @@ import java.util.ArrayList;
 public class ScanActivity extends AppCompatActivity {
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
-    private boolean mScanning;
+    private boolean mScanning = true;
     private Handler mHandler;
-    private ArrayList<BluetoothDevice> mLeDevcies;
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000; // 스캔 시간 10초
+//    private final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 2;
 
-    private static int PERMISSION_REQUEST_CODE = 1;
+    private static int PERMISSION_REQUEST_CODE = 3;
     private final static String TAG = ScanActivity.class.getSimpleName();
+
+
 
     ListView list1;
     TextView text1;
@@ -51,10 +61,12 @@ public class ScanActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         Log.d(TAG, "Request Location Permissions:");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        {
+        // 버전 체크후 권한 확인
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_CODE);
         }
+
+
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan);
@@ -80,8 +92,6 @@ public class ScanActivity extends AppCompatActivity {
             finish();
             return;
         }
-
-
     }
 
     @Override
@@ -95,26 +105,34 @@ public class ScanActivity extends AppCompatActivity {
         }
 
         // 어댑터 세팅
-        LeDeviceListAdapter adapter = new LeDeviceListAdapter();
-        list1.setAdapter(adapter);
+        mLeDeviceListAdapter = new LeDeviceListAdapter();
+        list1.setAdapter(mLeDeviceListAdapter);
 
         scanLeDevice(true);
     }
 
+
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == PERMISSION_REQUEST_CODE)
-        {
-            //Do something based on grantResults
-            if(grantResults[0] == PackageManager.PERMISSION_GRANTED)
-            {
-                Log.d(TAG, "coarse location permission granted");
-            }
-            else
-            {
-                Log.d(TAG, "coarse location permission denied");
+        for(int i=0; i<grantResults.length; i++){
+            if(grantResults[i] == PackageManager.PERMISSION_GRANTED){
+                text1.append("\n" + permissions[i] + " : 허용\n");
+            } else {
+                text1.append(permissions[i] + " : 거부\n");
             }
         }
+
+
+//        if (requestCode == PERMISSION_REQUEST_CODE) {
+//            //Do something based on grantResults
+//            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                text1.setText("permission granted");
+//                Log.d(TAG, "coarse location permission granted");
+//            } else {
+//                Log.d(TAG, "coarse location permission denied");
+//            }
+//        }
     }
 
     @Override
@@ -147,7 +165,7 @@ public class ScanActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        switch (id){
+        switch (id) {
             case R.id.menu_scan:
                 mLeDeviceListAdapter.clear();
                 scanLeDevice(true);
@@ -180,23 +198,57 @@ public class ScanActivity extends AppCompatActivity {
         invalidateOptionsMenu();
     }
 
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
+//    private ScanCallback mScanCallback = new ScanCallback() {
+//        @Override
+//        public void onScanResult(int callbackType, ScanResult result) {
+//            super.onScanResult(callbackType, result);
+//            Log.d("ddd", "onScanResult : " + result.getDevice().getName());
+//        }
+//
+//        @Override
+//        public void onBatchScanResults(List<ScanResult> results) {
+//            for(ScanResult result : results){
+////                processResult(result);
+//                Log.d("ddd", "onBatchScanResults : " + result.getDevice().getName());
+//
+//                mLeDeviceListAdapter.addDevice(result.getDevice());
+//                mLeDeviceListAdapter.notifyDataSetChanged();
+//            }
+//        }
 
+//    private void processResult(final ScanResult result) {
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                Log.d("ddd", "ddddddddd");
+//                mLeDeviceListAdapter.addDevice(result.getDevice());
+//                mLeDeviceListAdapter.notifyDataSetChanged();
+//            }
+//        });
+//    }
+
+
+
+
+
+
+    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+
+        @Override
+        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+            runOnUiThread(new Runnable() {
                 @Override
-                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mLeDeviceListAdapter.addDevice(device);
-                            mLeDeviceListAdapter.notifyDataSetChanged();
-                        }
-                    });
+                public void run() {
+                    Log.d("ddd", "device name : " + device.getName());
+                    mLeDeviceListAdapter.addDevice(device);
+                    mLeDeviceListAdapter.notifyDataSetChanged();
                 }
-            };
+            });
+        }
+    };
 
-    class LeDeviceListAdapter extends BaseAdapter{
-
+    class LeDeviceListAdapter extends BaseAdapter {
+        private ArrayList<BluetoothDevice> mLeDevcies;
         private LayoutInflater mInflator;
 
         public LeDeviceListAdapter(){
@@ -213,7 +265,13 @@ public class ScanActivity extends AppCompatActivity {
 
         public BluetoothDevice getDevcie(int position){ return mLeDevcies.get(position); }
 
-        public void clear(){ mLeDevcies.clear(); }
+//        mLeDevcies.clear();
+        public void clear(){
+//            if(mLeDevcies != null){
+                mLeDevcies.clear();
+//            }
+
+        }
 
         @Override
         public int getCount() {
@@ -243,6 +301,8 @@ public class ScanActivity extends AppCompatActivity {
 
             BluetoothDevice device = mLeDevcies.get(position);
             final String devcieName = device.getName();
+
+            Log.d(TAG, "device :" + device.getName());
             if(devcieName != null && devcieName.length() > 0)
                 sub_text.setText(devcieName);
             else

@@ -1,0 +1,2 @@
+rootProject.name='SmartBycicyleLock'
+include ':app'
